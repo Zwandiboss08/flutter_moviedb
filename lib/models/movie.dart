@@ -10,11 +10,11 @@ class Movie {
 
   factory Movie.fromJson(Map<String, dynamic> json) {
     return Movie(
-      id: json['id'],
-      title: json['title'],
-      posterPath: json['poster_path'],
-      overview: json['overview'],
-      rating: json['vote_average'].toDouble(),
+      id: json['id'] ?? 0,
+      title: json['title'] ?? '',
+      posterPath: json['poster_path'] ?? '',
+      overview: json['overview'] ?? '',
+      rating: json['vote_average'].toDouble() ?? 0.0,
     );
   }
 }

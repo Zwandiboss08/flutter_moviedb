@@ -1,32 +1,42 @@
-// screens/home_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_application_moviedb/controllers/home_controller.dart';
+import 'package:flutter_application_moviedb/screens/detail_movie_screen.dart';
+import 'package:flutter_application_moviedb/services/local_storage_service.dart';
 import 'package:flutter_application_moviedb/widgets/skeleton_loaders.dart';
 import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
+/// HomeScreen displays the main interface for the app.
+/// It includes sections for "Now Playing" and "Popular" movies.
+/// Each section allows users to interact with the movie items, including
+/// viewing details, adding to watchlist or favorites, and saving images.
 class HomeScreen extends StatelessWidget {
   final HomeController homeController = Get.put(HomeController());
+  final LocalStorageService localStorageService =
+      LocalStorageService(); // Create an instance of the service
 
-   HomeScreen({super.key});
+  HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title:const Text('Home'),
+        title: const Text('Home'),
       ),
       body: Obx(() {
+        // Check if the data is still loading
         if (homeController.isLoading.value) {
           return ListView(
             children: [
+              // Display 'Now Playing' section with skeleton loaders
               const Padding(
-                padding:  EdgeInsets.all(8.0),
-                child: Text('Now Playing', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                padding: EdgeInsets.all(8.0),
+                child: Text('Now Playing',
+                    style:
+                        TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               ),
               SizedBox(
-                height: 200,
+                height: 200, // Adjust height as needed
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   itemCount: 6, // Number of skeleton loaders to display
@@ -35,9 +45,12 @@ class HomeScreen extends StatelessWidget {
                   },
                 ),
               ),
+              // Display 'Popular' section with skeleton loaders
               const Padding(
-                padding:  EdgeInsets.all(8.0),
-                child: Text('Popular', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                padding: EdgeInsets.all(8.0),
+                child: Text('Popular',
+                    style:
+                        TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               ),
               SizedBox(
                 height: 300,
@@ -63,40 +76,82 @@ class HomeScreen extends StatelessWidget {
           );
         }
 
+        // Display the actual data
         return ListView(
           children: [
+            // Display 'Now Playing' section with movies
             const Padding(
-              padding:  EdgeInsets.all(8.0),
-              child: Text('Now Playing', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              padding: EdgeInsets.all(8.0),
+              child: Text('Now Playing',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             ),
             SizedBox(
-              height: 200,
+              height: 270, // Adjust height as needed
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: homeController.nowPlayingMovies.length,
                 itemBuilder: (context, index) {
                   var movie = homeController.nowPlayingMovies[index];
-                  return Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(
-                      children: [
-                        CachedNetworkImage(
-                          imageUrl: 'https://image.tmdb.org/t/p/w500${movie.posterPath}',
-                          placeholder: (context, url) => const CircularProgressIndicator(),
-                          errorWidget: (context, url, error) => const Icon(Icons.error),
-                          height: 150,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(movie.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-                      ],
+                  return GestureDetector(
+                    onTap: () {
+                      // Navigate to the DetailMovieScreen when a movie is tapped
+                      Get.to(() => DetailMovieScreen(movieId: movie.id));
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Column(
+                        children: [
+                          CachedNetworkImage(
+                            imageUrl:
+                                'https://image.tmdb.org/t/p/w500${movie.posterPath}',
+                            placeholder: (context, url) =>
+                                const CircularProgressIndicator(),
+                            errorWidget: (context, url, error) =>
+                                const Icon(Icons.error),
+                            height: 150,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(movie.title,
+                              maxLines: 1, overflow: TextOverflow.ellipsis),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.watch_later),
+                                onPressed: () {
+                                  homeController.addToWatchlist(movie);
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.favorite),
+                                onPressed: () {
+                                  homeController.addToFavorite(movie);
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.download),
+                                onPressed: () {
+                                  localStorageService.saveImage(
+                                    context, // Pass the context
+                                    'https://image.tmdb.org/t/p/w500${movie.posterPath}',
+                                    '${movie.id}_poster.jpg',
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 },
               ),
             ),
-           const  Padding(
-              padding:  EdgeInsets.all(8.0),
-              child: Text('Popular', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            // Display 'Popular' section with movies
+            const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: Text('Popular',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             ),
             SizedBox(
               height: 300,
@@ -105,14 +160,29 @@ class HomeScreen extends StatelessWidget {
                 itemCount: homeController.popularMovies.length,
                 itemBuilder: (context, index) {
                   var movie = homeController.popularMovies[index];
-                  return ListTile(
-                    leading: CachedNetworkImage(
-                      imageUrl: 'https://image.tmdb.org/t/p/w500${movie.posterPath}',
-                      placeholder: (context, url) => const CircularProgressIndicator(),
-                      errorWidget: (context, url, error) => const Icon(Icons.error),
+                  return GestureDetector(
+                    onTap: () {
+                      // Navigate to the DetailMovieScreen when a movie is tapped
+                      Get.to(() => DetailMovieScreen(movieId: movie.id));
+                    },
+                    child: ListTile(
+                      leading: CachedNetworkImage(
+                        imageUrl:
+                            'https://image.tmdb.org/t/p/w500${movie.posterPath}',
+                        placeholder: (context, url) =>
+                            const CircularProgressIndicator(),
+                        errorWidget: (context, url, error) =>
+                            const Icon(Icons.error),
+                      ),
+                      title: Text(movie.title),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(movie.overview,
+                              maxLines: 2, overflow: TextOverflow.ellipsis),
+                        ],
+                      ),
                     ),
-                    title: Text(movie.title),
-                    subtitle: Text(movie.overview, maxLines: 2, overflow: TextOverflow.ellipsis),
                   );
                 },
               ),
