@@ -1,6 +1,6 @@
 # flutter_application_moviedb
 
-A new Flutter project.
+Flutter app using API from moviedb
 
 ## Getting Started
 
