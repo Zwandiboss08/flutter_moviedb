@@ -42,7 +42,7 @@ class LocalStorageService {
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-         SnackBar(content: Text('Failed to save image to gallery')),
+         const SnackBar(content: Text('Failed to save image to gallery')),
         );
       }
     } on PlatformException catch (e) {

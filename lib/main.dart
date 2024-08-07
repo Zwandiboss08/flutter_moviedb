@@ -14,15 +14,13 @@ void main() async {
   if (sessionId == null) {
     // Perform login if no session ID exists
     // Example: use default credentials or prompt user input
-    final username = 'zwandiboss';
-    final password = 'jaeger08';
+    const username = 'zwandiboss';
+    const password = 'jaeger08';
     try {
       await authService.login(username, password);
       // Session successfully created or retrieved
       Get.snackbar('Login Successful', 'Session initialized');
-    } catch (e, stackTrace) {
-      print('ada error $e');
-      print('ada error di $stackTrace');
+    } catch (e) {
       Get.snackbar('Login Error', 'Failed to login: $e');
     }
   } else {
