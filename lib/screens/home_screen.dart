@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_moviedb/controllers/home_controller.dart';
 import 'package:flutter_application_moviedb/screens/detail_movie_screen.dart';
+import 'package:flutter_application_moviedb/screens/user_profile_screen.dart';
 import 'package:flutter_application_moviedb/services/local_storage_service.dart';
 import 'package:flutter_application_moviedb/widgets/skeleton_loaders.dart';
 import 'package:get/get.dart';
@@ -22,6 +23,14 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Home'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.account_circle),
+            onPressed: () {
+              Get.to(() => UserProfileScreen());
+            },
+          ),
+        ],
       ),
       body: Obx(() {
         // Check if the data is still loading
@@ -92,6 +101,10 @@ class HomeScreen extends StatelessWidget {
                 itemCount: homeController.nowPlayingMovies.length,
                 itemBuilder: (context, index) {
                   var movie = homeController.nowPlayingMovies[index];
+
+                  bool isFavorite = homeController.isMovieFavorite(movie.id);
+                  bool isWatchlisted =
+                      homeController.isMovieWatchlisted(movie.id);
                   return GestureDetector(
                     onTap: () {
                       // Navigate to the DetailMovieScreen when a movie is tapped
@@ -112,18 +125,29 @@ class HomeScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 8),
                           Text(movie.title,
-                              maxLines: 1, overflow: TextOverflow.ellipsis),
+                              maxLines: 2, overflow: TextOverflow.ellipsis),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               IconButton(
-                                icon: const Icon(Icons.watch_later),
+                                icon: Icon(
+                                  isWatchlisted
+                                      ? Icons.bookmark
+                                      : Icons.bookmark_border,
+                                  color:
+                                      isWatchlisted ? Colors.blue : Colors.grey,
+                                ),
                                 onPressed: () {
                                   homeController.addToWatchlist(movie);
                                 },
                               ),
                               IconButton(
-                                icon: const Icon(Icons.favorite),
+                                icon: Icon(
+                                  isFavorite
+                                      ? Icons.favorite
+                                      : Icons.favorite_border,
+                                  color: isFavorite ? Colors.red : Colors.grey,
+                                ),
                                 onPressed: () {
                                   homeController.addToFavorite(movie);
                                 },
@@ -132,7 +156,7 @@ class HomeScreen extends StatelessWidget {
                                 icon: const Icon(Icons.download),
                                 onPressed: () {
                                   localStorageService.saveImage(
-                                    context, // Pass the context
+                                    context, 
                                     'https://image.tmdb.org/t/p/w500${movie.posterPath}',
                                     '${movie.id}_poster.jpg',
                                   );

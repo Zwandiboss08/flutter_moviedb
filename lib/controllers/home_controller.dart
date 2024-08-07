@@ -1,51 +1,138 @@
 import 'package:flutter_application_moviedb/models/movie.dart';
 import 'package:flutter_application_moviedb/services/api_service.dart';
-import 'package:flutter_application_moviedb/services/local_storage_service.dart'; // Import LocalStorageService
+import 'package:flutter_application_moviedb/services/auth_service.dart';
 import 'package:get/get.dart';
 
 class HomeController extends GetxController {
-  // Observable lists to store Now Playing and Popular movies
+  final ApiService apiService = Get.put(ApiService());
   var nowPlayingMovies = <Movie>[].obs;
   var popularMovies = <Movie>[].obs;
-
-  // Observable variable to track loading state
+  var watchlistMovies = <Movie>[].obs;
+  var favoriteMovies = <Movie>[].obs;
   var isLoading = true.obs;
-
-  final LocalStorageService localStorageService = LocalStorageService(); // Create an instance of LocalStorageService
 
   @override
   void onInit() {
     super.onInit();
-    // Fetch movies when the controller is initialized
-    fetchMovies();
+    initializeSession();
+    fetchNowPlayingMovies();
+    fetchPopularMovies();
+    fetchFavoriteMovies();
+    fetchWatchlistMovies();
+  }
+  void initializeSession() async {
+    try {
+      final sessionId = await AuthService.getSessionId();
+      if (sessionId == null) {
+        // Handle case where session ID is not available
+        throw Exception('Session ID is not available.');
+      }
+      // Successfully initialized session
+      Get.snackbar('Session Initialized', 'Successfully logged in.');
+
+      // Fetch watchlist and favorite movies
+      fetchWatchlistMovies();
+      fetchFavoriteMovies();
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to initialize session: $e');
+    }
   }
 
-  // Method to fetch movies from the API
-  void fetchMovies() async {
+  Future<void> addToWatchlist(Movie movie) async {
+    final sessionId = await AuthService.getSessionId();
+    if (sessionId == null) {
+      Get.snackbar('Error', 'No active session found.');
+      return;
+    }
+
+    try {
+      await apiService.addToWatchlist(sessionId, movie.id);
+      fetchWatchlistMovies();
+      watchlistMovies.add(movie);
+      Get.snackbar('Added to Watchlist', '${movie.title} has been added to your watchlist.');
+    } catch (e) {
+      Get.snackbar('Error', 'An error occurred while adding ${movie.title} to your watchlist.');
+    }
+  }
+
+  Future<void> addToFavorite(Movie movie) async {
+    final sessionId = await AuthService.getSessionId();
+    if (sessionId == null) {
+      Get.snackbar('Error', 'No active session found.');
+      return;
+    }
+
+    try {
+      await apiService.addToFavorite(sessionId, movie.id);
+      fetchFavoriteMovies();
+      favoriteMovies.add(movie);
+
+      Get.snackbar('Added to Favorites', '${movie.title} has been added to your favorites.');
+    } catch (e) {
+      Get.snackbar('Error', 'An error occurred while adding ${movie.title} to your favorites.');
+    }
+  }
+
+  // Fetch now playing movies
+  void fetchNowPlayingMovies() async {
     try {
       isLoading(true);
-      var nowPlayingResult = await ApiService().getNowPlayingMovies();
-      var popularResult = await ApiService().getPopularMovies();
-      // Update the observable lists with the fetched data
-      nowPlayingMovies.assignAll(nowPlayingResult);
-      popularMovies.assignAll(popularResult);
+      final result = await apiService.getNowPlayingMovies();
+      nowPlayingMovies.assignAll(result.take(6));
     } finally {
-      // Set loading to false after data is fetched
       isLoading(false);
     }
   }
 
-  // Method to add a movie to the watchlist
-  void addToWatchlist(Movie movie) {
-    // You might want to add logic to save to a database or local storage
-    // For now, this is just a placeholder
-    print('Added to watchlist: ${movie.title}');
+  // Fetch popular movies
+  void fetchPopularMovies() async {
+    try {
+      isLoading(true);
+      final result = await apiService.getPopularMovies();
+      popularMovies.assignAll(result.take(20));
+    } finally {
+      isLoading(false);
+    }
   }
 
-  // Method to add a movie to favorites
-  void addToFavorite(Movie movie) {
-    // You might want to add logic to save to a database or local storage
-    // For now, this is just a placeholder
-    print('Added to favorites: ${movie.title}');
+  // Fetch watchlist movies
+  void fetchWatchlistMovies() async {
+    final sessionId = await AuthService.getSessionId();
+    if (sessionId == null) {
+      Get.snackbar('Error', 'No active session found.');
+      return;
+    }
+
+    try {
+      final result = await apiService.getWatchlistMovies(sessionId);
+      watchlistMovies.assignAll(result);
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to fetch watchlist movies: $e');
+    }
+  }
+
+  // Fetch favorite movies
+  void fetchFavoriteMovies() async {
+    final sessionId = await AuthService.getSessionId();
+    if (sessionId == null) {
+      Get.snackbar('Error', 'No active session found.');
+      return;
+    }
+
+    try {
+      final result = await apiService.getFavoriteMovies(sessionId);
+      favoriteMovies.assignAll(result);
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to fetch favorite movies: $e');
+    }
+  }
+
+
+  bool isMovieFavorite(int movieId) {
+    return favoriteMovies.any((movie) => movie.id == movieId);
+  }
+
+  bool isMovieWatchlisted(int movieId) {
+    return watchlistMovies.any((movie) => movie.id == movieId);
   }
 }

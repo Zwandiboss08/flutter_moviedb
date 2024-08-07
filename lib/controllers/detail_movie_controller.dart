@@ -8,7 +8,6 @@ class DetailMovieController extends GetxController {
     title: '',
     posterPath: '',
     overview: '',
-    rating: 0.0,
   ));
   var similarMovies = <Movie>[].obs;
   var isLoading = true.obs;
